@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>¿Algo así?</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+
+    .node {
+      border: 1px solid #333;
+      padding: 10px;
+      margin: 5px;
+      background: #f0f0f0;
+      cursor: grab;
+    }
+
+    .container {
+      margin-left: 20px;
+    }
+
+    .drag-over {
+      border: 2px dashed #007bff;
+      background-color: #e0f0ff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>Algo así???</h2>
+  <div id="tree-container"></div>
+
+  <script>
+    const tree = [
+      {
+        id: '1',
+        children: [
+          {
+            id: '1.1',
+            children: [
+              {
+                id: '1.1.1',
+                children: [
+                  { id: 'A', children: [] }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: '2',
+        children: [
+          {
+            id: '2.1',
+            children: []
+          }
+        ]
+      }
+    ];
+
+    let draggedId = null;
+
+    function renderTree(container, nodes) {
+      container.innerHTML = '';
+
+      nodes.forEach(node => {
+        const nodeEl = document.createElement('div');
+        nodeEl.classList.add('node');
+        nodeEl.setAttribute('draggable', true);
+        nodeEl.setAttribute('data-id', node.id);
+        nodeEl.textContent = node.id;
+
+        nodeEl.addEventListener('dragstart', e => {
+          draggedId = node.id;
+          e.stopPropagation();
+        });
+
+        nodeEl.addEventListener('dragover', e => {
+          e.preventDefault();
+          nodeEl.classList.add('drag-over');
+        });
+
+        nodeEl.addEventListener('dragleave', () => {
+          nodeEl.classList.remove('drag-over');
+        });
+
+        nodeEl.addEventListener('drop', e => {
+          e.preventDefault();
+          nodeEl.classList.remove('drag-over');
+          const targetId = node.id;
+          if (draggedId && draggedId !== targetId) {
+            moveNodeRecursive(tree, draggedId, targetId, 0);
+            renderTree(document.getElementById('tree-container'), tree);
+          }
+        });
+
+        container.appendChild(nodeEl);
+
+        if (node.children && node.children.length > 0) {
+          const childContainer = document.createElement('div');
+          childContainer.classList.add('container');
+          renderTree(childContainer, node.children);
+          container.appendChild(childContainer);
+        }
+      });
+    }
+
+    function moveNodeRecursive(nodes, nodeId, targetId, position) {
+      let nodeToMove = null;
+
+      function removeNode(nodes) {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.id === nodeId) {
+            nodeToMove = nodes.splice(i, 1)[0];
+            return true;
+          }
+
+          if (node.children && removeNode(node.children)) return true;
+        }
+        return false;
+      }
+
+      function insertNode(nodes) {
+        for (let node of nodes) {
+          if (node.id === targetId) {
+            node.children = node.children || [];
+            node.children.push(nodeToMove);
+            return true;
+          }
+
+          if (node.children && insertNode(node.children)) return true;
+        }
+        return false;
+      }
+
+      removeNode(nodes);
+      if (nodeToMove) insertNode(nodes);
+    }
+
+    renderTree(document.getElementById('tree-container'), tree);
+  </script>
+
+</body>
+
+</html>
